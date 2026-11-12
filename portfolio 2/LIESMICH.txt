@@ -1,0 +1,16 @@
+Design-Portfolio
+
+Starten: index.html per Doppelklick im Browser öffnen.
+
+index.html     Struktur und Texte (Name, Kontakt, Navigation)
+css/style.css  Farben, Schrift, Raster (4 Spalten, 2 auf Tablet und Handy)
+js/main.js     Liste der Arbeiten und der "scroll me"-Cursor
+images/        Hier kommen deine Bilder hinein
+
+Projekt-Fenster: In js/main.js bekommt jedes Projekt als fünften Eintrag Details,
+z. B. ["Titel","2026",1.25,"cover.jpg",{text:"Beschreibung",images:["a.jpg","b.jpg","c.jpg"]}]
+
+Schriften: Stack Sans Notch (Name auf der Startseite), Stack Sans Headline (Header, Kategorien) und Stack Sans Text (Rest) liegen im Ordner fonts/ und brauchen kein Internet.
+Zum Veröffentlichen den ganzen Ordner "portfolio" bei einem Hoster hochladen (z. B. Netlify, GitHub Pages).
+
+About-Text: in index.html im Block <aside id="about"> ändern.
