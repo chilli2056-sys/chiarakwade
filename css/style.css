@@ -122,9 +122,9 @@ main{touch-action:pan-x pan-y; margin-left:var(--side); width:var(--mainw); posi
 .d-main #dImg{width:100%; height:100%}
 .d-prev,.d-next{position:absolute; top:50%; transform:translateY(-50%); width:40px; height:40px; background:var(--bg)!important; font-size:20px}
 .d-prev{left:0} .d-next{right:0}
-/* Mit Maus: keine Pfeile auf dem Foto, stattdessen ein Pfeil an der Maus (Fotos mit mehreren Bildern). Auf Touch-Geräten bleiben die Pfeile. */
+/* Pfeile auf dem Foto */
+.d-prev,.d-next{display:none}   /* keine Pfeile auf dem Foto: Maus = runder Cursor am Rand, Handy = Druck auf den Rand */
 @media (hover:hover){
-  .d-prev,.d-next{display:none}
   .detail .d-main{cursor:none!important}
 }
 /* Runder Cursor auf dem großen Foto: blauer Kreis (Outline), am Bildrand erscheint ein blauer Pfeil darin. Größe bleibt immer gleich. */
