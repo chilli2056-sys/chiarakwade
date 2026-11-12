@@ -230,10 +230,20 @@ document.addEventListener("pointerleave",function(){ic.classList.remove("on","ed
 // und ein Tipp dort blättert ein Bild weiter (Tipp in der Mitte: Bild groß, Wischen blättert wie bisher).
 var tap={x:0,y:0,zone:0,moved:false}, noClick=0;
 function hideTapCircle(){ic.classList.remove("on","edge")}
+// Tatsächlich sichtbarer Bildbereich: im Vollbild liegt das Foto mit Rand um sich herum (contain), die Randfelder gelten nur auf dem Foto
+function photoRect(){
+  var r=dMain.getBoundingClientRect(), im=dImg.querySelector("img");
+  if(!im||!im.naturalWidth||!detail.classList.contains("wide")) return r;
+  var s=Math.min(r.width/im.naturalWidth,r.height/im.naturalHeight), w=im.naturalWidth*s, h=im.naturalHeight*s;
+  return {left:r.left+(r.width-w)/2, top:r.top+(r.height-h)/2, width:w, height:h};
+}
+document.getElementById("dX").addEventListener("click",function(e){e.stopPropagation(); setWide(false)});
 dMain.addEventListener("touchstart",function(e){
-  var t=e.touches[0], r=dMain.getBoundingClientRect(), f=(t.clientX-r.left)/r.width;
+  if(e.target.closest("button")){tap.zone=0; return}
+  var t=e.touches[0], r=photoRect(), f=(t.clientX-r.left)/r.width;
+  var inside=t.clientX>=r.left&&t.clientX<=r.left+r.width&&t.clientY>=r.top&&t.clientY<=r.top+r.height;
   tap.x=t.clientX; tap.y=t.clientY; tap.moved=false;
-  tap.zone=(e.touches.length===1&&dMain.classList.contains("multi"))?(f<0.22?-1:(f>0.78?1:0)):0;
+  tap.zone=(inside&&e.touches.length===1&&dMain.classList.contains("multi"))?(f<0.22?-1:(f>0.78?1:0)):0;
   if(tap.zone){
     icArr.textContent=tap.zone<0?"\u2190":"\u2192";
     ic.style.translate=t.clientX+"px "+(t.clientY-56)+"px";   // über dem Finger, damit er den Kreis nicht verdeckt
