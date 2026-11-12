@@ -133,6 +133,7 @@ main{touch-action:pan-x pan-y; margin-left:var(--side); width:var(--mainw); posi
   font-size:22px; line-height:1;
   transition:opacity .15s ease}
 .imgcursor.on{opacity:1}
+@media (hover:hover){.imgcursor{width:26px; height:26px; margin:-13px 0 0 -13px; font-size:14px}}   /* Laptop/Maus: kleiner (Handy bleibt bei 40px) */
 .imgcursor .arr{opacity:0; transition:opacity .15s ease}
 .imgcursor.edge .arr{opacity:1}
 .d-count{position:absolute; left:0; bottom:0; font-size:12px; background:var(--bg); padding:3px 8px}
