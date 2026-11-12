@@ -1,0 +1,246 @@
+/* 5 gleich große Spalten: links die Info-Spalte, rechts 4 Projekt-Spalten.
+   Beim Vergrößern wird die linke Spalte schmal, das Fenster ist dann 3 Spalten breit. */
+/* Eigene Schriften: Stack Sans (variable Dicke 200 bis 700), liegen im Ordner fonts/ */
+@font-face{font-family:"Stack Sans Headline"; font-weight:200 700; font-display:swap;
+  src:url("../fonts/StackSansHeadline_wght_.woff2") format("woff2-variations"),url("../fonts/StackSansHeadline_wght_.woff2") format("woff2")}
+@font-face{font-family:"Stack Sans Notch"; font-weight:200 700; font-display:swap;
+  src:url("../fonts/StackSansNotch_wght_.woff2") format("woff2-variations"),url("../fonts/StackSansNotch_wght_.woff2") format("woff2")}
+@font-face{font-family:"Stack Sans Text"; font-weight:200 700; font-display:swap;
+  src:url("../fonts/StackSansText_wght_.woff2") format("woff2-variations"),url("../fonts/StackSansText_wght_.woff2") format("woff2")}
+@property --bg{syntax:"<color>"; inherits:true; initial-value:#ffffff}
+@property --fg{syntax:"<color>"; inherits:true; initial-value:#111111}
+@property --muted{syntax:"<color>"; inherits:true; initial-value:#8c8c8c}
+@property --tile{syntax:"<color>"; inherits:true; initial-value:#efefef}
+@property --line{syntax:"<color>"; inherits:true; initial-value:#e4e4e4}
+@property --accent{syntax:"<color>"; inherits:true; initial-value:#0a2cff}
+@property --yr{syntax:"<color>"; inherits:true; initial-value:#0a2cff}
+@property --side{syntax:"<length-percentage>"; inherits:true; initial-value:20%}
+@property --mainw{syntax:"<length-percentage>"; inherits:true; initial-value:80%}
+:root{
+  --bg:#ffffff; --fg:#111111; --muted:#8c8c8c; --tile:#efefef; --line:#e4e4e4; --accent:#0a2cff; --yr:#0a2cff;
+  --blue:#0a2cff;
+  --bar:52px; --side-open:min(62%,240px); --side:28px; --mainw:calc(100% - 28px);
+  --top:calc(var(--bar) + env(safe-area-inset-top,0px));
+  --bottom:calc(var(--bar) + env(safe-area-inset-bottom,0px));
+}
+html{scroll-behavior:smooth; scroll-padding-top:var(--top); color-scheme:light}
+*,*::before,*::after{box-sizing:border-box}
+body{overflow-x:hidden; transition:--side .38s cubic-bezier(.16,1,.3,1),--bg .3s ease,--fg .3s ease,--muted .3s ease,--tile .3s ease,--line .3s ease,--accent .3s ease,--yr .3s ease; margin:0; background:var(--bg); color:var(--fg);
+  font:400 15px/1.4 "Stack Sans Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased}
+a{color:inherit; text-decoration:none}
+a:focus-visible{outline:2px solid currentColor; outline-offset:3px}
+h2{margin:0 0 6px; font-size:13px; font-weight:500; color:var(--muted)}
+p{margin:0}
+
+/* Feste Leisten */
+.bar{position:fixed; z-index:5; background:var(--bg); color:var(--fg);}
+.top,.bottom{left:0; right:0; display:flex; align-items:center; justify-content:space-between;
+  padding:0 24px; font-weight:500}
+.top{top:0; height:var(--top); padding-top:env(safe-area-inset-top,0px); border-bottom:1px solid var(--line)}
+.bottom{bottom:0; height:var(--bottom); padding-bottom:env(safe-area-inset-bottom,0px); border-top:1px solid var(--line)}
+.top nav,.bottom nav{display:flex; gap:24px}
+.top>*,.bottom>*{flex:1}
+.top nav,.bottom nav{justify-content:center}
+.top>span,.bottom>span{text-align:right}
+.top-right{display:flex; justify-content:flex-end; gap:24px}
+.top button{padding:0; border:0; background:none; font:inherit; color:inherit; cursor:pointer}
+.top button:hover{color:var(--muted)}
+.top button:focus-visible{outline:2px solid currentColor; outline-offset:3px}
+.side{left:0; top:var(--top); bottom:var(--bottom); width:var(--side); padding:0;
+  border-right:1px solid var(--line); display:flex; flex-direction:column; gap:28px; font-weight:500; overflow:hidden;
+  transition:padding .3s ease}
+
+/* Header, Kategorien und Chips in der variablen Schrift (Stack Sans Headline). Die Dicke folgt sanft der Fenstergröße (js/main.js) */
+.top,.side,.chips{font-family:"Stack Sans Headline","Stack Sans Text",system-ui,sans-serif;
+  font-variation-settings:"wght" var(--ui-wght,600)}
+
+/* Feste Spalten im Hintergrund: ändern sich beim Zoomen nie */
+:root{--bgcols:4}
+.colsbg{position:fixed; z-index:0; top:var(--top); bottom:var(--bottom); left:var(--side); width:var(--mainw); pointer-events:none;
+  background:repeating-linear-gradient(to right,transparent 0 calc(100%/var(--bgcols) - 1px),var(--line) calc(100%/var(--bgcols) - 1px) calc(100%/var(--bgcols)))}
+
+/* Alles knallblau mit weißer Schrift, sobald man über eine Leiste fährt oder tippt */
+/* Über der oberen oder unteren Leiste: ganze Seite invertiert, Blau mit orangener Schrift */
+body.blue{--bg:#0a2cff; --fg:#ff6a13; --muted:rgba(255,106,19,.7); --tile:#2b49ff; --line:rgba(255,106,19,.6); --accent:#ffffff; --yr:#ff6a13}
+body.blue .cat.on,body.blue .chip{background:var(--fg); border-color:var(--fg); color:var(--bg)}
+body.blue .side .cat.on:hover{color:var(--bg)}
+
+main{touch-action:pan-x pan-y; margin-left:var(--side); width:var(--mainw); position:relative; z-index:1}
+.hero{min-height:100vh; min-height:100svh; padding:var(--top) calc(24px + 28px) var(--bottom) 24px;
+  display:flex; align-items:center; justify-content:center}
+.hero{flex-direction:column; gap:18px}
+/* Variable Schrift für den Namen (Stack Sans Notch): die Dicke folgt der Fenstergröße, siehe js/main.js */
+.name{margin:0; width:max-content; max-width:none; white-space:nowrap; text-align:center; line-height:.92;
+  font-family:"Stack Sans Notch","Stack Sans Headline","Stack Sans Text",system-ui,sans-serif; font-size:100px;
+  /* Dicke: schmales Fenster = fett (--wmax), breites Fenster = dünn (--wmin) */
+  --wmin:200; --wmax:700;
+  font-variation-settings:"wght" calc(var(--wmax) - (var(--wmax) - var(--wmin)) * var(--wt,.5))}
+.role{margin:0; font-size:15px; font-weight:500; color:var(--muted); text-align:center}
+
+/* Cursor-Label: schwarz auf Weiß, blau über Inhalten, weiß in den blauen Leisten */
+.cursor{position:fixed; left:0; top:0; z-index:10; pointer-events:none; font-size:13px; font-weight:500;
+  white-space:nowrap; opacity:0; transition:opacity .2s; color:var(--fg)}
+.cursor.blue{color:var(--blue)}
+.cursor.on{opacity:1}
+@media (hover:none){.cursor{display:none}}
+
+/* 4-Spalten-Raster */
+.works{padding:24px 0 calc(var(--bottom) + 24px)}
+.grid{column-count:var(--n,4); column-gap:0}
+.work{break-inside:avoid; margin:0 0 28px; padding:0 12px; display:block}
+.work .img{background:var(--tile); width:100%; display:block; object-fit:cover}
+.work figcaption{display:flex; justify-content:space-between; gap:12px; padding-top:8px; font-size:13px}
+.work figcaption span{color:var(--muted)}
+.grid.dense .work{padding:0 6px; margin-bottom:16px}
+.grid.dense figcaption{font-size:11px}
+.grid.dense figcaption span{display:none}
+
+/* Handy: nur oben und unten feste Leisten */
+@media (max-width:760px){
+  .top,.bottom{padding-left:14px; padding-right:14px; font-size:14px}
+  .top nav,.bottom nav,.top-right{gap:14px}
+  .hero{padding-left:14px; padding-right:calc(14px + 28px)}
+  :root{--bgcols:2}
+  .work{padding:0 7px}
+  .d-cols{grid-template-columns:1fr; gap:16px}
+}
+/* Projekt-Fenster */
+.work.active .img{outline:2px solid var(--fg); outline-offset:3px}
+.detail{position:fixed; z-index:4; top:var(--top); bottom:var(--bottom); right:0;
+  left:calc(var(--side) + var(--mainw)/2); background:var(--bg); border-left:1px solid var(--line);
+  overflow:auto; padding:20px 24px 28px}
+.detail[hidden]{display:none}
+.detail button{font:inherit; color:inherit; cursor:pointer; border:0; background:none; padding:0}
+.detail button:focus-visible{outline:2px solid var(--fg); outline-offset:2px}
+.d-head{display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:16px; font-weight:500}
+.d-head span{color:var(--muted); margin-left:8px}
+.d-head button{font-size:24px; line-height:1}
+.d-main{position:relative; aspect-ratio:4/3; background:var(--tile); overflow:hidden}
+.d-main img{width:100%; height:100%; object-fit:cover; display:block}
+.d-main #dImg{width:100%; height:100%}
+.d-prev,.d-next{position:absolute; top:50%; transform:translateY(-50%); width:40px; height:40px; background:var(--bg)!important; font-size:20px}
+.d-prev{left:0} .d-next{right:0}
+.d-count{position:absolute; left:0; bottom:0; font-size:12px; background:var(--bg); padding:3px 8px}
+.d-cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:20px}
+.d-text{font-size:14px; line-height:1.55}
+.d-thumbs{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; align-content:start}
+.d-thumbs button{aspect-ratio:4/3; background:var(--tile)!important; overflow:hidden}
+.d-thumbs button.on{outline:2px solid var(--fg); outline-offset:2px}
+.d-thumbs img{width:100%; height:100%; object-fit:cover; display:block}
+
+.about .d-text{max-width:42ch; font-size:15px}
+.about .d-text p{margin:0 0 1em}
+.d-main{touch-action:manipulation; cursor:zoom-in}
+.detail.wide .d-main{aspect-ratio:16/9; cursor:zoom-out}
+
+/* Kategorien links */
+.cats{display:flex; flex-direction:column; align-items:flex-start; gap:6px}
+.cat{font:inherit; color:inherit; background:none; cursor:pointer; padding:2px 10px; margin-left:-11px;
+  border:1px solid transparent; border-radius:999px}
+.cat.on{background:var(--blue); border-color:var(--blue); color:#fff}
+.side .cat.on:hover{color:#fff}
+.cat:focus-visible{outline:2px solid var(--fg); outline-offset:2px}
+.side .cat:hover,.side p:hover{color:var(--accent)}
+.side>*{transition:opacity .25s}
+.work.out{display:none}
+
+/* Zeitstrahl: neueste Jahre oben, älteste unten; Jahreszahl mittig an einer unsichtbaren Linie */
+.grid.timeline{column-count:1}
+.band{display:grid; grid-template-columns:repeat(var(--n,4),1fr); align-items:end}
+.band .detail{grid-column:1 / -1}
+.yearlabel{position:relative; z-index:3; display:flex; align-items:center; height:40px; padding-left:12px;
+  font-size:15px; font-weight:500; color:var(--yr)}   /* beginnt an der ganz linken Spaltenlinie, blau, über den Kacheln */
+.grid.dense .yearlabel{padding-left:6px}
+@media (max-width:760px){.yearlabel,.grid.dense .yearlabel{padding-left:7px}}
+
+/* Header, untere Leiste, Kategorien und Chips in Kleinbuchstaben (die Texte in index.html dürfen groß geschrieben bleiben) */
+.top,.bottom,.side,.chips{text-transform:lowercase}
+
+/* Fenster werden nie blau, nur die Schrift beim Drüberfahren */
+.detail strong:hover,.detail span:hover,.detail p:hover,.detail .d-text:hover,.detail a:hover,.detail button:hover{color:var(--accent)}
+
+@media (min-width:761px){
+  :root{--side-open:20%}                                  /* aufgeklappt: eine Spaltenbreite */
+  .detail.wide{left:calc(var(--side) + var(--mainw)/4)}  /* Großbild: die 1. Arbeiten-Spalte bleibt links sichtbar, das Fenster nimmt den Rest */
+}
+
+/* Kategorie-Spalte: eingeklappt eine schmale Leiste, Klick klappt sie auf. Auswahl als Chips unter dem Header */
+.side-tab{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:0; border:0;
+  background:none; color:inherit; font:inherit; font-weight:500; cursor:pointer; writing-mode:vertical-rl;
+  transform:rotate(180deg); transition:opacity .2s ease}
+.side-tab:hover{color:var(--accent)}
+.side>.cats{opacity:0; pointer-events:none; white-space:nowrap; transition:opacity .25s ease}
+.cat{white-space:nowrap}
+/* Aufklappen: die Leiste wird breit und schiebt den restlichen Inhalt dynamisch nach rechts */
+body.catopen{--side:var(--side-open)}
+body.catopen .side{padding:24px 20px}
+body.catopen .side-tab{opacity:0; pointer-events:none}
+body.catopen .side>.cats{opacity:1; pointer-events:auto; transition-delay:.12s}
+.chips{display:flex; flex-wrap:wrap; gap:6px; position:fixed; z-index:3; top:var(--top); left:var(--side); right:0;
+  padding:8px 10px; pointer-events:none; transition:opacity .2s}
+.chips:empty{display:none}
+.chip{pointer-events:auto; font:inherit; font-size:13px; font-weight:500; color:#fff; background:var(--blue);
+  border:1px solid var(--blue); border-radius:999px; padding:2px 10px; cursor:pointer}
+.chip:focus-visible{outline:2px solid var(--fg); outline-offset:2px}
+html.haschips{scroll-padding-top:calc(var(--top) + 44px)}
+@media (max-width:760px){
+  /* offenes Projekt oder About: ganz im Vordergrund, auch vor den Kategorien */
+  body.open .side,body.open .chips{opacity:0; pointer-events:none}
+}
+
+/* Kachel beim Drüberfahren: wie in InDesign eingefärbt, als blaues Halbton-Raster. Sehr feines 3×3-Punktraster: eine Zelle = 3 Gerätepixel */
+.work a{display:block; position:relative; isolation:isolate; overflow:hidden}
+.ht{position:absolute; inset:0; opacity:0; transition:opacity .3s ease; pointer-events:none; isolation:isolate;
+  background:#fff; filter:brightness(.62) contrast(40) url(#duo)}
+.ht.ph{background:#8c8c8c}
+.ht img{display:block; width:100%; height:100%; object-fit:cover; filter:grayscale(1) contrast(1.3) brightness(.9)}
+.ht::before{content:""; position:absolute; inset:0; z-index:1; mix-blend-mode:screen;
+  background:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAAAAABzQ+pjAAAAFElEQVR42mP++HoxM8fca0wWMqEAIt0ErJRYH3wAAAAASUVORK5CYII=") 0 0/3px 3px; image-rendering:pixelated}
+@media (min-resolution:2dppx){.ht::before{background-size:1.5px 1.5px}}
+@media (min-resolution:3dppx){.ht::before{background-size:1px 1px}}
+.work figcaption,.work figcaption span{transition:color .3s ease}
+@media (hover:hover){
+  .work a:hover .ht,.work a:focus-visible .ht{opacity:1}
+  /* Beschriftung der Kachel wird blau, sobald man aufs Bild kommt */
+  .work a:hover+figcaption,.work a:hover+figcaption span,
+  .work a:focus-visible+figcaption,.work a:focus-visible+figcaption span{color:var(--accent)}
+}
+
+@media (max-width:760px){.name .w{display:block}}
+/* Buchstaben (Name und Unterzeile) werden blau, sobald man darüberfährt, und blenden langsam wieder aus */
+.name .ch,.role .ch{transition:color .9s ease}
+.name .ch:hover,.role .ch:hover{color:var(--accent); transition-duration:.08s}
+
+/* Fenster gehen dynamisch auf: von rechts aufziehen, Inhalt rückt gestaffelt nach */
+.detail{opacity:0; transform:translateX(36px); clip-path:inset(0 0 0 100%);
+  transition:opacity .3s ease,transform .55s cubic-bezier(.16,1,.3,1),clip-path .55s cubic-bezier(.16,1,.3,1),left .55s cubic-bezier(.16,1,.3,1)}
+.detail.in{opacity:1; transform:none; clip-path:inset(0)}
+.detail>*{opacity:0; transform:translateY(14px); transition:opacity .4s ease,transform .55s cubic-bezier(.16,1,.3,1)}
+.detail.in>*{opacity:1; transform:none}
+.detail.in>:nth-child(1){transition-delay:.12s}
+.detail.in>:nth-child(2){transition-delay:.2s}
+.detail.in>:nth-child(3){transition-delay:.28s}
+@keyframes dimg{from{opacity:0; transform:scale(1.05)} to{opacity:1; transform:none}}
+.d-main img{animation:dimg .6s cubic-bezier(.16,1,.3,1)}
+/* Handy: Projekt als Fenster von unten, fast der ganze Bildschirm (die obere Leiste bleibt sichtbar). Tippen aufs Foto = nur das Bild in Großformat */
+@media (max-width:760px){
+  .detail{position:fixed; left:0; right:0; bottom:0; top:auto; height:calc(100vh - var(--top) - 12px); height:calc(100svh - var(--top) - 12px); margin:0;
+    padding:16px 14px calc(24px + env(safe-area-inset-bottom,0px)); border:0; border-top:1px solid var(--line);
+    overflow:auto; z-index:7; opacity:1; clip-path:none; transform:translateY(100%);
+    transition:transform .55s cubic-bezier(.16,1,.3,1)}
+  .detail.in{transform:none; clip-path:none}
+  .detail.about{top:var(--top); bottom:var(--bottom); height:auto; z-index:6; border-top:0; padding:20px 14px}
+  .detail.wide{top:0; bottom:0; height:auto; padding:0; border:0; z-index:8; overflow:hidden}
+  .detail.wide>*:not(.d-main){display:none}
+  .detail.wide .d-main{position:absolute; inset:0; aspect-ratio:auto; background:var(--bg)}
+  .detail.wide .d-main img{object-fit:contain}
+  .detail.wide .d-count{bottom:env(safe-area-inset-bottom,0px)}   /* im Großbild bleiben Pfeile und Zähler zum Blättern */
+}
+
+/* Blauer Punkt, der beim Wischen im Foto dem Finger hinterherkommt */
+.swipe-dot{position:fixed; left:0; top:0; z-index:20; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%;
+  background:var(--blue); pointer-events:none; opacity:0; scale:.4; transition:opacity .25s ease,scale .25s ease}
+.swipe-dot.on{opacity:1; scale:1}
+
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.cursor,.bar,body,.side>*,.detail,.detail>*,.ht,.work figcaption,.work figcaption span{transition:none}.d-main img{animation:none}}
