@@ -351,7 +351,14 @@ if(roleEl){
 nameEl.setAttribute("aria-label",nameEl.textContent.replace(/\s+/g," ").trim());
 Array.prototype.forEach.call(nameEl.querySelectorAll(".w"),function(wd){
   var t=wd.textContent; wd.textContent=""; wd.setAttribute("aria-hidden","true");
-  t.split("").forEach(function(ch){var s=document.createElement("span"); s.className="ch"; s.textContent=ch; wd.appendChild(s)});
+  t.split("").forEach(function(ch){
+    var s=document.createElement("span"); s.className="ch";
+    if(ch==="i"){   // i in zwei Lagen: Punkt und Stamm (i ohne Punkt), damit der Punkt allein hüpfen kann
+      s.classList.add("i");
+      s.innerHTML='<span class="dot">i</span><span class="stem" aria-hidden="true">\u0131</span>';
+    }else s.textContent=ch;
+    wd.appendChild(s);
+  });
 });
 function clamp01(x){return Math.max(0,Math.min(1,x))}
 function fitName(){
@@ -368,10 +375,55 @@ function fitName(){
   var maxH=hh*0.5;                                              // nicht höher als die halbe Fensterhöhe
   if(nameEl.offsetHeight>maxH) nameEl.style.fontSize=(size*maxH/nameEl.offsetHeight)+"px";
 }
-// Schimmern beim Laden: jeder Buchstabe bekommt eine Startzeit von links nach rechts
-Array.prototype.forEach.call(nameEl.querySelectorAll(".ch"),function(ch,i){ch.style.setProperty("--i",i)});
-function startShimmer(){requestAnimationFrame(function(){nameEl.classList.add("shimmer")})}
-if(document.fonts&&document.fonts.ready) document.fonts.ready.then(startShimmer); else startShimmer();
+// Start-Effekt: der Punkt des i fällt von oben herein, hüpft von rechts nach links über d, K und h und landet auf dem i
+nameEl.classList.add("drop");   // Punkt bleibt unsichtbar, bis die Bewegung startet
+function dropDot(){
+  var iEl=nameEl.querySelector(".ch.i");
+  var chs=Array.prototype.slice.call(nameEl.querySelectorAll(".ch"));
+  function find(c){return chs.filter(function(e){return e.textContent===c})[0]}
+  var dEl=find("d"), kEl=find("K"), hEl=find("h");
+  if(!iEl||!dEl||!kEl||!hEl||reduce||!iEl.animate){nameEl.classList.remove("drop"); return}
+  var dot=iEl.querySelector(".dot");
+  var fs=parseFloat(getComputedStyle(nameEl).fontSize);
+  var wt=parseFloat(nameEl.style.getPropertyValue("--wt")); if(isNaN(wt)) wt=.5;
+  var w=700-500*wt, dotBottom=659-(w-200)*0.104;                 // Unterkante des Punkts in Schrifteinheiten (1000 = 1 em)
+  var ir=iEl.getBoundingClientRect(), icx=ir.left+ir.width/2;
+  var hr=hEl.getBoundingClientRect(), baseI=hr.bottom-0.3*fs;    // Grundlinie der Zeile, in der das i steht
+  function land(el,frac,top){                                    // Punkt sitzt auf der Oberkante des Buchstabens
+    var r=el.getBoundingClientRect(), base=r.bottom-0.3*fs;
+    return {x:r.left+frac*r.width-icx, y:(base-baseI)-(top-dotBottom)*fs/1000};
+  }
+  var P=[land(dEl,.83,750), land(kEl,.17,700), land(hEl,.18,750), {x:0,y:0}];
+  var fr=[], ev=[], T=0, N=12;   // ev: wann welcher Buchstabe blau wird (Landung) und wieder loslässt
+  function add(t,x,y){fr.push({t:t,x:x,y:y})}
+  var s={x:P[0].x, y:P[0].y-fs*2.6};                             // Start weit über dem Namen
+  add(0,s.x,s.y);
+  for(var k=1;k<=N;k++){var u=k/N; add(800*u,s.x,s.y+(P[0].y-s.y)*u*u)}   // Fallen: wird schneller
+  T=800; ev.push({t:T,el:dEl,on:true}); add(T+30,P[0].x,P[0].y); T+=30; ev.push({t:T,el:dEl,on:false});
+  function arc(a,b,dur,h){                                       // Sprung als Bogen
+    for(var k=1;k<=N;k++){var u=k/N; add(T+dur*u,a.x+(b.x-a.x)*u,a.y+(b.y-a.y)*u-4*h*u*(1-u))}
+    T+=dur;
+  }
+  // höhere Bögen brauchen länger (wie bei einem echten Ball), dazwischen nur ein kurzer Aufsetzer
+  arc(P[0],P[1],760,fs*0.60); ev.push({t:T,el:kEl,on:true}); add(T+30,P[1].x,P[1].y); T+=30; ev.push({t:T,el:kEl,on:false});
+  arc(P[1],P[2],690,fs*0.50); ev.push({t:T,el:hEl,on:true}); add(T+30,P[2].x,P[2].y); T+=30; ev.push({t:T,el:hEl,on:false});
+  arc(P[2],P[3],640,fs*0.42); ev.push({t:T,el:iEl,on:true});
+  arc(P[3],P[3],380,fs*0.13);                                    // Nachfedern auf dem i, wird immer kleiner
+  arc(P[3],P[3],240,fs*0.045);
+  ev.push({t:T+150,el:iEl,on:false});
+  var frames=fr.map(function(f){return {transform:"translate("+f.x+"px,"+f.y+"px)",opacity:1,offset:f.t/T}});
+  var a=dot.animate(frames,{duration:T,delay:150,easing:"linear",fill:"backwards"});
+  a.onfinish=function(){nameEl.classList.remove("drop"); a.cancel()};
+  // Der Buchstabe, auf dem der Punkt landet, wird blau und blendet nach dem Absprung langsam wieder aus
+  var t0=performance.now(), ei=0;
+  (function tick(){
+    var t=performance.now()-t0-150;
+    while(ei<ev.length&&ev[ei].t<=t){ev[ei].el.classList.toggle("hit",ev[ei].on); ei++}
+    if(ei<ev.length) requestAnimationFrame(tick);
+  })();
+}
+function startDrop(){requestAnimationFrame(dropDot)}
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(startDrop); else startDrop();
 function queueFit(){cancelAnimationFrame(fitRaf); fitRaf=requestAnimationFrame(fitName)}
 window.addEventListener("resize",queueFit);
 if(document.fonts){document.fonts.ready.then(fitName); document.fonts.addEventListener("loadingdone",fitName)}
