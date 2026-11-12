@@ -75,7 +75,8 @@ main{touch-action:pan-x pan-y; margin-left:var(--side); width:var(--mainw); posi
   font-family:"Stack Sans Notch","Stack Sans Headline","Stack Sans Text",system-ui,sans-serif; font-size:100px;
   /* Dicke: schmales Fenster = fett (--wmax), breites Fenster = dünn (--wmin) */
   --wmin:200; --wmax:700;
-  font-variation-settings:"wght" calc(var(--wmax) - (var(--wmax) - var(--wmin)) * var(--wt,.5))}
+  --wnow:calc(var(--wmax) - (var(--wmax) - var(--wmin)) * var(--wt,.5));   /* aktuelle Dicke, auch für den Start-Effekt */
+  font-variation-settings:"wght" var(--wnow)}
 .role{margin:0; font-size:15px; font-weight:500; color:var(--muted); text-align:center}
 
 /* Cursor-Label: schwarz auf Weiß, blau über Inhalten, weiß in den blauen Leisten */
@@ -209,10 +210,17 @@ html.haschips{scroll-padding-top:calc(var(--top) + 44px)}
 @media (max-width:760px){.name .w{display:block}}
 /* Buchstaben (Name und Unterzeile) werden blau, sobald man darüberfährt, und blenden langsam wieder aus */
 .name .ch,.role .ch{transition:color .9s ease}
-.name .ch:hover,.role .ch:hover{color:var(--accent); transition-duration:.08s}
-/* Beim Laden schimmert der Name von links nach rechts blau (Buchstabe für Buchstabe, Startzeit --i aus js/main.js) */
-@keyframes shimmer{0%{color:var(--fg)} 35%{color:var(--accent)} 100%{color:var(--fg)}}
-.name.shimmer .ch{animation:shimmer 1.2s ease backwards; animation-delay:calc(var(--i,0) * .07s)}
+.name .ch:hover,.role .ch:hover,.name .ch.hit{color:var(--accent); transition-duration:.08s}
+/* Start-Effekt: Der Punkt des i fällt von oben herein und hüpft von rechts nach links über die langen Buchstaben (d, K, h),
+   bis er auf dem i landet. Die Bewegung wird in js/main.js berechnet. Beim Drüberfahren hüpft er noch einmal. */
+.name.drop .dot{opacity:0}
+@keyframes hop{0%{transform:translateY(0)} 22%{transform:translateY(-.24em)} 46%{transform:translateY(0)}
+  62%{transform:translateY(-.11em)} 78%{transform:translateY(0)} 88%{transform:translateY(-.035em)} 100%{transform:translateY(0)}}
+.name .ch.i:hover .dot{animation:hop 1.1s cubic-bezier(.3,.7,.2,1)}
+/* Das i besteht aus zwei Lagen: der Stamm (i ohne Punkt) und darüber nur der Punkt (das ganze i, abgeschnitten über der Stammhöhe) */
+.name .ch.i{display:inline-block; position:relative}
+.name .ch.i .dot{display:block; clip-path:inset(-.5em -.5em .69em -.5em)}
+.name .ch.i .stem{position:absolute; left:0; top:0}
 
 /* Fenster gehen dynamisch auf: von rechts aufziehen, Inhalt rückt gestaffelt nach */
 .detail{opacity:0; transform:translateX(36px); clip-path:inset(0 0 0 100%);
@@ -255,4 +263,4 @@ body.intro .bottom{transform:translateY(100%)}
 body.intro .side{transform:translateX(-100%)}
 body.intro .colsbg,body.intro .chips,body.intro .chip{opacity:0; pointer-events:none}
 
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.cursor,.bar,.top,.bottom,.side,.colsbg,body,.side>*,.detail,.detail>*,.ht,.work figcaption,.work figcaption span{transition:none}.d-main img{animation:none}.name.shimmer .ch{animation:none}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.cursor,.bar,.top,.bottom,.side,.colsbg,body,.side>*,.detail,.detail>*,.ht,.work figcaption,.work figcaption span{transition:none}.d-main img{animation:none}.name .ch.i:hover .dot{animation:none}}
