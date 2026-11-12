@@ -127,6 +127,13 @@ main{touch-action:pan-x pan-y; margin-left:var(--side); width:var(--mainw); posi
 @media (hover:hover){
   .detail .d-main{cursor:none!important}
 }
+/* Handy, Vollbild eines Fotos: Schließen-Knopf (ein Tipp neben das Foto schließt ebenfalls) */
+.d-x{display:none}
+@media (max-width:760px){
+  .detail.wide .d-x{display:flex; position:absolute; top:calc(12px + env(safe-area-inset-top,0px)); right:12px; z-index:3;
+    width:40px; height:40px; align-items:center; justify-content:center; border-radius:50%;
+    border:2px solid var(--blue); background:var(--bg); color:var(--blue); font-size:24px; line-height:1}
+}
 /* Runder Cursor auf dem großen Foto: blauer Kreis (Outline), am Bildrand erscheint ein blauer Pfeil darin. Größe bleibt immer gleich. */
 .imgcursor{position:fixed; left:0; top:0; z-index:30; width:40px; height:40px; margin:-20px 0 0 -20px; border-radius:50%;
   border:2px solid var(--blue); color:var(--blue); pointer-events:none; opacity:0; display:flex; align-items:center; justify-content:center;
