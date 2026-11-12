@@ -210,6 +210,9 @@ html.haschips{scroll-padding-top:calc(var(--top) + 44px)}
 /* Buchstaben (Name und Unterzeile) werden blau, sobald man darüberfährt, und blenden langsam wieder aus */
 .name .ch,.role .ch{transition:color .9s ease}
 .name .ch:hover,.role .ch:hover{color:var(--accent); transition-duration:.08s}
+/* Beim Laden schimmert der Name von links nach rechts blau (Buchstabe für Buchstabe, Startzeit --i aus js/main.js) */
+@keyframes shimmer{0%{color:var(--fg)} 35%{color:var(--accent)} 100%{color:var(--fg)}}
+.name.shimmer .ch{animation:shimmer 1.2s ease backwards; animation-delay:calc(var(--i,0) * .07s)}
 
 /* Fenster gehen dynamisch auf: von rechts aufziehen, Inhalt rückt gestaffelt nach */
 .detail{opacity:0; transform:translateX(36px); clip-path:inset(0 0 0 100%);
@@ -252,4 +255,4 @@ body.intro .bottom{transform:translateY(100%)}
 body.intro .side{transform:translateX(-100%)}
 body.intro .colsbg,body.intro .chips,body.intro .chip{opacity:0; pointer-events:none}
 
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.cursor,.bar,.top,.bottom,.side,.colsbg,body,.side>*,.detail,.detail>*,.ht,.work figcaption,.work figcaption span{transition:none}.d-main img{animation:none}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.cursor,.bar,.top,.bottom,.side,.colsbg,body,.side>*,.detail,.detail>*,.ht,.work figcaption,.work figcaption span{transition:none}.d-main img{animation:none}.name.shimmer .ch{animation:none}}
