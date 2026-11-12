@@ -35,6 +35,8 @@ var cur=document.getElementById("cursor"), hero=document.getElementById("start")
 var inHero=true, x=0, y=0, cx=0, cy=0, px=0, py=0, last=null;
 function update(){
   if(!last){cur.classList.remove("on");return}
+  // Auf dem großen Foto (Maus) übernimmt der runde Foto-Cursor, das Text-Label bleibt aus
+  if(last.closest&&last.closest(".d-main")&&matchMedia("(hover:hover)").matches&&!last.closest("button")){cur.classList.remove("on"); return}
   var inBar=last.closest&&last.closest(".bar:not(.side)");
   var link=last.closest&&last.closest("a,button");
   var empty=/^(HTML|BODY|MAIN|SECTION|DIV|HEADER|FOOTER|ASIDE|NAV)$/.test(last.tagName)&&!last.classList.contains("img")&&!last.closest(".work");
@@ -170,6 +172,7 @@ function openWork(i){
   var w=works[i], d=w[4]||{};
   closeAbout(); cur_i=i; setWide(false);
   imgs=d.images||(w[3]?[w[3]]:[null,null,null,null]);
+  document.querySelector(".d-main").classList.toggle("multi",imgs.length>1);
   dTitle.textContent=w[0]; dYear.textContent=w[1];
   dText.textContent=d.text||"Hier steht die Beschreibung des Projekts: Aufgabe, Vorgehen und Ergebnis. Ersetze diesen Text in js/main.js.";
   dThumbs.innerHTML="";
@@ -208,11 +211,26 @@ function setWide(on){
   detail.classList.toggle("wide",on); document.body.classList.toggle("wide",on);
   setTimeout(function(){if(typeof applyZoom==="function") applyZoom(); if(typeof fitName==="function") fitName()},400);
 }
+// Runder Foto-Cursor (Maus): in der Mitte ein Kreis, am linken/rechten Bildrand ein blauer Kreis mit orangenem Pfeil
+var ic=document.createElement("div"), icZone=0, dMain=document.querySelector(".d-main");
+ic.className="imgcursor"; ic.setAttribute("aria-hidden","true"); ic.innerHTML='<span class="arr"></span>'; document.body.appendChild(ic);
+var icArr=ic.firstChild;
+window.addEventListener("pointermove",function(e){
+  var over=e.pointerType!=="touch"&&e.target.closest&&e.target.closest(".d-main")&&!e.target.closest("button")&&matchMedia("(hover:hover)").matches;
+  if(!over){ic.classList.remove("on","edge"); icZone=0; return}
+  var r=dMain.getBoundingClientRect(), f=(e.clientX-r.left)/r.width;
+  icZone=dMain.classList.contains("multi")?(f<0.18?-1:(f>0.82?1:0)):0;
+  ic.style.translate=e.clientX+"px "+e.clientY+"px";   // nicht transform: sonst würde das Vergrößern (scale) die Position mitskalieren
+  if(icZone) icArr.textContent=icZone<0?"\u2190":"\u2192";
+  ic.classList.add("on"); ic.classList.toggle("edge",icZone!==0);
+});
+document.addEventListener("pointerleave",function(){ic.classList.remove("on","edge"); icZone=0});
 var lastP=0;
 dImg.addEventListener("click",function(){
   if(mq.matches){setWide(!detail.classList.contains("wide")); return}   // Handy: ein Tipp = nur das Bild groß, nochmal = zurück
+  if(icZone&&matchMedia("(hover:hover)").matches){show(slide+icZone); return}   // Bildrand: ein Bild weiter blättern (kein Doppelklick-Warten, ändert nie die Spalten)
   var now=Date.now();
-  if(now-lastP<350){setWide(!detail.classList.contains("wide")); lastP=0} else lastP=now;
+  if(now-lastP<350){setWide(!detail.classList.contains("wide")); lastP=0} else lastP=now;   // Mitte: Doppelklick = groß
 });
 
 // About: öffnet die rechten zwei Spalten
@@ -343,21 +361,24 @@ var heroEl=document.getElementById("start"), nameEl=document.getElementById("nam
 var roleEl=document.querySelector(".role");
 if(roleEl){
   var rt=roleEl.textContent; roleEl.setAttribute("aria-label",rt); roleEl.textContent="";
+  var rw=document.createElement("span"); rw.className="w"; rw.setAttribute("aria-hidden","true");   // Maske (Schlitz) und Schicht, die hochfährt
+  var rwi=document.createElement("span"); rwi.className="wi"; rw.appendChild(rwi); roleEl.appendChild(rw);
   rt.split("").forEach(function(ch){
-    var s=document.createElement("span"); s.className="ch"; s.setAttribute("aria-hidden","true"); s.textContent=ch; roleEl.appendChild(s);
+    var s=document.createElement("span"); s.className="ch"; s.textContent=ch; rwi.appendChild(s);
   });
 }
 // jeden Buchstaben des Namens einzeln ansprechbar machen (für den Hover)
 nameEl.setAttribute("aria-label",nameEl.textContent.replace(/\s+/g," ").trim());
 Array.prototype.forEach.call(nameEl.querySelectorAll(".w"),function(wd){
   var t=wd.textContent; wd.textContent=""; wd.setAttribute("aria-hidden","true");
+  var wi=document.createElement("span"); wi.className="wi"; wd.appendChild(wi);   // wi = Schicht, die durch den Schlitz hochfährt
   t.split("").forEach(function(ch){
     var s=document.createElement("span"); s.className="ch";
     if(ch==="i"){   // i in zwei Lagen: Punkt und Stamm (i ohne Punkt), damit der Punkt allein hüpfen kann
       s.classList.add("i");
       s.innerHTML='<span class="dot">i</span><span class="stem" aria-hidden="true">\u0131</span>';
     }else s.textContent=ch;
-    wd.appendChild(s);
+    wi.appendChild(s);
   });
 });
 function clamp01(x){return Math.max(0,Math.min(1,x))}
@@ -370,60 +391,52 @@ function fitName(){
   rs.setProperty("--ui-wght",(700-200*th).toFixed(0));          // Dicke 500 bis 700
   nameEl.style.fontSize="100px";
   var cs=getComputedStyle(heroEl), avail=heroEl.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
-  var size=100*avail/nameEl.offsetWidth;
+  var size=0.85*100*avail/nameEl.offsetWidth;                   // Name füllt 85 % der Breite (1 = ganze Breite)
   nameEl.style.fontSize=size+"px";
   var maxH=hh*0.5;                                              // nicht höher als die halbe Fensterhöhe
   if(nameEl.offsetHeight>maxH) nameEl.style.fontSize=(size*maxH/nameEl.offsetHeight)+"px";
-}
-// Start-Effekt: der Punkt des i fällt von oben herein, hüpft von rechts nach links über d, K und h und landet auf dem i
-nameEl.classList.add("drop");   // Punkt bleibt unsichtbar, bis die Bewegung startet
-function dropDot(){
-  var iEl=nameEl.querySelector(".ch.i");
-  var chs=Array.prototype.slice.call(nameEl.querySelectorAll(".ch"));
-  function find(c){return chs.filter(function(e){return e.textContent===c})[0]}
-  var dEl=find("d"), kEl=find("K"), hEl=find("h");
-  if(!iEl||!dEl||!kEl||!hEl||reduce||!iEl.animate){nameEl.classList.remove("drop"); return}
-  var dot=iEl.querySelector(".dot");
-  var fs=parseFloat(getComputedStyle(nameEl).fontSize);
-  var wt=parseFloat(nameEl.style.getPropertyValue("--wt")); if(isNaN(wt)) wt=.5;
-  var w=700-500*wt, dotBottom=659-(w-200)*0.104;                 // Unterkante des Punkts in Schrifteinheiten (1000 = 1 em)
-  var ir=iEl.getBoundingClientRect(), icx=ir.left+ir.width/2;
-  var hr=hEl.getBoundingClientRect(), baseI=hr.bottom-0.3*fs;    // Grundlinie der Zeile, in der das i steht
-  function land(el,frac,top){                                    // Punkt sitzt auf der Oberkante des Buchstabens
-    var r=el.getBoundingClientRect(), base=r.bottom-0.3*fs;
-    return {x:r.left+frac*r.width-icx, y:(base-baseI)-(top-dotBottom)*fs/1000};
+  // Untertitel: immer in einer Zeile, höchstens so breit wie der Name (auch wenn der Name auf dem Handy zweizeilig
+  // übereinander steht). Die Schrift wird dafür kleiner, auf großen Fenstern bleibt sie bei 18 px.
+  if(roleEl){
+    var nw=nameEl.offsetWidth;
+    roleEl.style.setProperty("--wt",tw.toFixed(3));
+    roleEl.style.whiteSpace="nowrap"; roleEl.style.width="max-content"; roleEl.style.maxWidth="none";
+    roleEl.style.fontSize="100px";
+    var rw100=roleEl.offsetWidth;
+    var cap=Math.max(14,Math.min(18,w*0.013));
+    roleEl.style.fontSize=Math.max(9,Math.min(cap,100*nw/rw100))+"px";
+    roleEl.style.marginTop=(-0.07*parseFloat(nameEl.style.fontSize))+"px";
   }
-  var P=[land(dEl,.83,750), land(kEl,.17,700), land(hEl,.18,750), {x:0,y:0}];
-  var fr=[], ev=[], T=0, N=12;   // ev: wann welcher Buchstabe blau wird (Landung) und wieder loslässt
-  function add(t,x,y){fr.push({t:t,x:x,y:y})}
-  var s={x:P[0].x, y:P[0].y-fs*2.6};                             // Start weit über dem Namen
-  add(0,s.x,s.y);
-  for(var k=1;k<=N;k++){var u=k/N; add(800*u,s.x,s.y+(P[0].y-s.y)*u*u)}   // Fallen: wird schneller
-  T=800; ev.push({t:T,el:dEl,on:true}); add(T+30,P[0].x,P[0].y); T+=30; ev.push({t:T,el:dEl,on:false});
-  function arc(a,b,dur,h){                                       // Sprung als Bogen
-    for(var k=1;k<=N;k++){var u=k/N; add(T+dur*u,a.x+(b.x-a.x)*u,a.y+(b.y-a.y)*u-4*h*u*(1-u))}
+}
+// Start-Effekt: beide Zeilen des Namens fahren gleichzeitig von unten durch einen Schlitz hoch
+if(!reduce){nameEl.classList.add("pre"); if(roleEl) roleEl.classList.add("pre");}   // Name und Untertitel zunächst unter dem Schlitz
+// Danach: der Punkt des i bounced zweimal. 1. Sprung etwas höher, er landet anders herum geneigt,
+// 2. Sprung niedriger, er landet wieder in der ursprünglichen Lage.
+function bounceDot(){
+  var dot=nameEl.querySelector(".ch.i .dot");
+  if(!dot||reduce||!dot.animate) return;
+  var fs=parseFloat(getComputedStyle(nameEl).fontSize), N=14, T=0, tilt=16, fr=[];
+  function add(t,y,r){fr.push({t:t,y:y,r:r})}
+  function arc(dur,h,r0,r1){
+    for(var k=1;k<=N;k++){var u=k/N, e=u*u*(3-2*u); add(T+dur*u,-4*h*u*(1-u),r0+(r1-r0)*e)}
     T+=dur;
   }
-  // höhere Bögen brauchen länger (wie bei einem echten Ball), dazwischen nur ein kurzer Aufsetzer
-  arc(P[0],P[1],760,fs*0.60); ev.push({t:T,el:kEl,on:true}); add(T+30,P[1].x,P[1].y); T+=30; ev.push({t:T,el:kEl,on:false});
-  arc(P[1],P[2],690,fs*0.50); ev.push({t:T,el:hEl,on:true}); add(T+30,P[2].x,P[2].y); T+=30; ev.push({t:T,el:hEl,on:false});
-  arc(P[2],P[3],640,fs*0.42); ev.push({t:T,el:iEl,on:true});
-  arc(P[3],P[3],380,fs*0.13);                                    // Nachfedern auf dem i, wird immer kleiner
-  arc(P[3],P[3],240,fs*0.045);
-  ev.push({t:T+150,el:iEl,on:false});
-  var frames=fr.map(function(f){return {transform:"translate("+f.x+"px,"+f.y+"px)",opacity:1,offset:f.t/T}});
-  var a=dot.animate(frames,{duration:T,delay:150,easing:"linear",fill:"backwards"});
-  a.onfinish=function(){nameEl.classList.remove("drop"); a.cancel()};
-  // Der Buchstabe, auf dem der Punkt landet, wird blau und blendet nach dem Absprung langsam wieder aus
-  var t0=performance.now(), ei=0;
-  (function tick(){
-    var t=performance.now()-t0-150;
-    while(ei<ev.length&&ev[ei].t<=t){ev[ei].el.classList.toggle("hit",ev[ei].on); ei++}
-    if(ei<ev.length) requestAnimationFrame(tick);
-  })();
+  add(0,0,0);
+  arc(440,fs*0.42,0,tilt); add(T+60,0,tilt); T+=60;     // 1. Sprung (höher), Landung geneigt
+  arc(340,fs*0.28,tilt,0);                               // 2. Sprung (niedriger), Landung wieder gerade
+  dot.animate(fr.map(function(f){return {transform:"translateY("+f.y+"px) rotate("+f.r+"deg)",offset:f.t/T}}),{duration:T,easing:"linear"});
 }
-function startDrop(){requestAnimationFrame(dropDot)}
-if(document.fonts&&document.fonts.ready) document.fonts.ready.then(startDrop); else startDrop();
+function startRise(){requestAnimationFrame(function(){requestAnimationFrame(function(){
+  nameEl.classList.add("go");
+  var first=nameEl.querySelector(".wi");
+  if(first) first.addEventListener("transitionend",function(){nameEl.classList.add("done"); if(!roleEl) setTimeout(bounceDot,250)},{once:true});
+  if(roleEl){   // Untertitel folgt kurz danach
+    roleEl.classList.add("go");
+    var rf=roleEl.querySelector(".wi");
+    if(rf) rf.addEventListener("transitionend",function(){roleEl.classList.add("done"); setTimeout(bounceDot,250)},{once:true});
+  }
+})})}
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(startRise); else startRise();
 function queueFit(){cancelAnimationFrame(fitRaf); fitRaf=requestAnimationFrame(fitName)}
 window.addEventListener("resize",queueFit);
 if(document.fonts){document.fonts.ready.then(fitName); document.fonts.addEventListener("loadingdone",fitName)}
@@ -435,7 +448,7 @@ var swX=0, dot=document.createElement("div"), dotRun=false, dotT=0, dX=0, dY=0, 
 dot.className="swipe-dot"; dot.setAttribute("aria-hidden","true"); document.body.appendChild(dot);
 function dotLoop(){
   dX+=(tX-dX)*.18; dY+=(tY-dY)*.18;
-  dot.style.transform="translate("+dX+"px,"+dY+"px)";
+  dot.style.translate=dX+"px "+dY+"px";
   if(dotRun) requestAnimationFrame(dotLoop);
 }
 function dotStart(t){
