@@ -1,1 +1,0 @@
-Lege hier deine Bilder ab (jpg, png, webp) und trage den Dateinamen in js/main.js in die Liste "works" ein.
