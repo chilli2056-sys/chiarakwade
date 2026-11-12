@@ -368,6 +368,10 @@ function fitName(){
   var maxH=hh*0.5;                                              // nicht höher als die halbe Fensterhöhe
   if(nameEl.offsetHeight>maxH) nameEl.style.fontSize=(size*maxH/nameEl.offsetHeight)+"px";
 }
+// Schimmern beim Laden: jeder Buchstabe bekommt eine Startzeit von links nach rechts
+Array.prototype.forEach.call(nameEl.querySelectorAll(".ch"),function(ch,i){ch.style.setProperty("--i",i)});
+function startShimmer(){requestAnimationFrame(function(){nameEl.classList.add("shimmer")})}
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(startShimmer); else startShimmer();
 function queueFit(){cancelAnimationFrame(fitRaf); fitRaf=requestAnimationFrame(fitName)}
 window.addEventListener("resize",queueFit);
 if(document.fonts){document.fonts.ready.then(fitName); document.fonts.addEventListener("loadingdone",fitName)}
