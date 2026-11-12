@@ -69,7 +69,7 @@ body.blue .side .cat.on:hover{color:var(--bg)}
 main{touch-action:pan-x pan-y; margin-left:var(--side); width:var(--mainw); position:relative; z-index:1}
 .hero{min-height:100vh; min-height:100svh; padding:var(--top) calc(24px + 28px) var(--bottom) 24px;
   display:flex; align-items:center; justify-content:center}
-.hero{flex-direction:column; gap:18px}
+.hero{flex-direction:column; gap:4px}
 /* Variable Schrift für den Namen (Stack Sans Notch): die Dicke folgt der Fenstergröße, siehe js/main.js */
 .name{margin:0; width:max-content; max-width:none; white-space:nowrap; text-align:center; line-height:.92;
   font-family:"Stack Sans Notch","Stack Sans Headline","Stack Sans Text",system-ui,sans-serif; font-size:100px;
@@ -77,7 +77,8 @@ main{touch-action:pan-x pan-y; margin-left:var(--side); width:var(--mainw); posi
   --wmin:200; --wmax:700;
   --wnow:calc(var(--wmax) - (var(--wmax) - var(--wmin)) * var(--wt,.5));   /* aktuelle Dicke, auch für den Start-Effekt */
   font-variation-settings:"wght" var(--wnow)}
-.role{margin:0; font-size:15px; font-weight:500; color:var(--muted); text-align:center}
+.role{margin:0; font-size:clamp(14px,1.3vw,18px); font-weight:500; color:var(--fg); text-align:center; line-height:1.15;
+  font-variation-settings:"wght" calc(300 + 300 * (1 - var(--wt,.5)))}   /* schmales Fenster = kräftiger (600), breites = leichter (300) */
 
 /* Cursor-Label: schwarz auf Weiß, blau über Inhalten, weiß in den blauen Leisten */
 .cursor{position:fixed; left:0; top:0; z-index:10; pointer-events:none; font-size:13px; font-weight:500;
@@ -121,6 +122,19 @@ main{touch-action:pan-x pan-y; margin-left:var(--side); width:var(--mainw); posi
 .d-main #dImg{width:100%; height:100%}
 .d-prev,.d-next{position:absolute; top:50%; transform:translateY(-50%); width:40px; height:40px; background:var(--bg)!important; font-size:20px}
 .d-prev{left:0} .d-next{right:0}
+/* Mit Maus: keine Pfeile auf dem Foto, stattdessen ein Pfeil an der Maus (Fotos mit mehreren Bildern). Auf Touch-Geräten bleiben die Pfeile. */
+@media (hover:hover){
+  .d-prev,.d-next{display:none}
+  .detail .d-main{cursor:none!important}
+}
+/* Runder Cursor auf dem großen Foto: blauer Kreis (Outline), am Bildrand erscheint ein blauer Pfeil darin. Größe bleibt immer gleich. */
+.imgcursor{position:fixed; left:0; top:0; z-index:30; width:40px; height:40px; margin:-20px 0 0 -20px; border-radius:50%;
+  border:2px solid var(--blue); color:var(--blue); pointer-events:none; opacity:0; display:flex; align-items:center; justify-content:center;
+  font-size:22px; line-height:1;
+  transition:opacity .15s ease}
+.imgcursor.on{opacity:1}
+.imgcursor .arr{opacity:0; transition:opacity .15s ease}
+.imgcursor.edge .arr{opacity:1}
 .d-count{position:absolute; left:0; bottom:0; font-size:12px; background:var(--bg); padding:3px 8px}
 .d-cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:20px}
 .d-text{font-size:14px; line-height:1.55}
@@ -207,19 +221,28 @@ html.haschips{scroll-padding-top:calc(var(--top) + 44px)}
   .work a:focus-visible+figcaption,.work a:focus-visible+figcaption span{color:var(--accent)}
 }
 
+/* Start-Effekt: jedes Wort steckt hinter einem Schlitz (Kante unten) und fährt von unten hoch, beide gleichzeitig */
+.name .w{display:inline-block; clip-path:inset(-.4em -.4em 0 -.4em)}
+.name .wi{display:inline-block}
+.name.pre .wi{transform:translateY(115%)}
+.name.pre.go .wi{transform:none; transition:transform 1.2s cubic-bezier(.16,1,.3,1)}
+.name.done .w{clip-path:none}
+/* Untertitel: dasselbe, aber ein Stück später und als ganzer Block */
+.role .w{display:block; clip-path:inset(-.4em -.4em 0 -.4em)}
+.role .wi{display:block}
+.role.pre .wi{transform:translateY(120%)}
+.role.pre.go .wi{transform:none; transition:transform 1.1s cubic-bezier(.16,1,.3,1) .75s}
+.role.done .w{clip-path:none}
 @media (max-width:760px){.name .w{display:block}}
 /* Buchstaben (Name und Unterzeile) werden blau, sobald man darüberfährt, und blenden langsam wieder aus */
 .name .ch,.role .ch{transition:color .9s ease}
-.name .ch:hover,.role .ch:hover,.name .ch.hit{color:var(--accent); transition-duration:.08s}
-/* Start-Effekt: Der Punkt des i fällt von oben herein und hüpft von rechts nach links über die langen Buchstaben (d, K, h),
-   bis er auf dem i landet. Die Bewegung wird in js/main.js berechnet. Beim Drüberfahren hüpft er noch einmal. */
-.name.drop .dot{opacity:0}
+.name .ch:hover,.role .ch:hover{color:var(--accent); transition-duration:.08s}
 @keyframes hop{0%{transform:translateY(0)} 22%{transform:translateY(-.24em)} 46%{transform:translateY(0)}
   62%{transform:translateY(-.11em)} 78%{transform:translateY(0)} 88%{transform:translateY(-.035em)} 100%{transform:translateY(0)}}
 .name .ch.i:hover .dot{animation:hop 1.1s cubic-bezier(.3,.7,.2,1)}
 /* Das i besteht aus zwei Lagen: der Stamm (i ohne Punkt) und darüber nur der Punkt (das ganze i, abgeschnitten über der Stammhöhe) */
 .name .ch.i{display:inline-block; position:relative}
-.name .ch.i .dot{display:block; clip-path:inset(-.5em -.5em .69em -.5em)}
+.name .ch.i .dot{display:block; clip-path:inset(-.5em -.5em .69em -.5em); transform-origin:50% .11em}
 .name .ch.i .stem{position:absolute; left:0; top:0}
 
 /* Fenster gehen dynamisch auf: von rechts aufziehen, Inhalt rückt gestaffelt nach */
@@ -263,4 +286,4 @@ body.intro .bottom{transform:translateY(100%)}
 body.intro .side{transform:translateX(-100%)}
 body.intro .colsbg,body.intro .chips,body.intro .chip{opacity:0; pointer-events:none}
 
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.cursor,.bar,.top,.bottom,.side,.colsbg,body,.side>*,.detail,.detail>*,.ht,.work figcaption,.work figcaption span{transition:none}.d-main img{animation:none}.name .ch.i:hover .dot{animation:none}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.cursor,.bar,.top,.bottom,.side,.colsbg,body,.side>*,.detail,.detail>*,.ht,.work figcaption,.work figcaption span{transition:none}.d-main img{animation:none}.name .ch.i:hover .dot{animation:none}.imgcursor{transition:none}.name.pre.go .wi,.role.pre.go .wi{transition:none}}
