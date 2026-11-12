@@ -216,7 +216,8 @@ var ic=document.createElement("div"), icZone=0, dMain=document.querySelector(".d
 ic.className="imgcursor"; ic.setAttribute("aria-hidden","true"); ic.innerHTML='<span class="arr"></span>'; document.body.appendChild(ic);
 var icArr=ic.firstChild;
 window.addEventListener("pointermove",function(e){
-  var over=e.pointerType!=="touch"&&e.target.closest&&e.target.closest(".d-main")&&!e.target.closest("button")&&matchMedia("(hover:hover)").matches;
+  if(e.pointerType==="touch") return;   // Touch regelt der Abschnitt darunter
+  var over=e.target.closest&&e.target.closest(".d-main")&&!e.target.closest("button")&&matchMedia("(hover:hover)").matches;
   if(!over){ic.classList.remove("on","edge"); icZone=0; return}
   var r=dMain.getBoundingClientRect(), f=(e.clientX-r.left)/r.width;
   icZone=dMain.classList.contains("multi")?(f<0.18?-1:(f>0.82?1:0)):0;
@@ -225,8 +226,32 @@ window.addEventListener("pointermove",function(e){
   ic.classList.add("on"); ic.classList.toggle("edge",icZone!==0);
 });
 document.addEventListener("pointerleave",function(){ic.classList.remove("on","edge"); icZone=0});
+// Handy: keine Pfeile auf dem Foto. Drückt man auf den linken/rechten Rand, erscheint der Kreis mit Pfeil über dem Finger,
+// und ein Tipp dort blättert ein Bild weiter (Tipp in der Mitte: Bild groß, Wischen blättert wie bisher).
+var tap={x:0,y:0,zone:0,moved:false}, noClick=0;
+function hideTapCircle(){ic.classList.remove("on","edge")}
+dMain.addEventListener("touchstart",function(e){
+  var t=e.touches[0], r=dMain.getBoundingClientRect(), f=(t.clientX-r.left)/r.width;
+  tap.x=t.clientX; tap.y=t.clientY; tap.moved=false;
+  tap.zone=(e.touches.length===1&&dMain.classList.contains("multi"))?(f<0.22?-1:(f>0.78?1:0)):0;
+  if(tap.zone){
+    icArr.textContent=tap.zone<0?"\u2190":"\u2192";
+    ic.style.translate=t.clientX+"px "+(t.clientY-56)+"px";   // über dem Finger, damit er den Kreis nicht verdeckt
+    ic.classList.add("on","edge");
+  }
+},{passive:true});
+dMain.addEventListener("touchmove",function(e){
+  var t=e.touches[0];
+  if(Math.abs(t.clientX-tap.x)>10||Math.abs(t.clientY-tap.y)>10){tap.moved=true; hideTapCircle()}
+},{passive:true});
+dMain.addEventListener("touchend",function(){
+  if(tap.zone&&!tap.moved){show(slide+tap.zone); noClick=Date.now()}
+  tap.zone=0; setTimeout(hideTapCircle,160);
+},{passive:true});
+dMain.addEventListener("touchcancel",function(){tap.zone=0; hideTapCircle()},{passive:true});
 var lastP=0;
 dImg.addEventListener("click",function(){
+  if(Date.now()-noClick<600) return;   // dieser Tipp war schon ein Blättern am Rand
   if(mq.matches){setWide(!detail.classList.contains("wide")); return}   // Handy: ein Tipp = nur das Bild groß, nochmal = zurück
   if(icZone&&matchMedia("(hover:hover)").matches){show(slide+icZone); return}   // Bildrand: ein Bild weiter blättern (kein Doppelklick-Warten, ändert nie die Spalten)
   var now=Date.now();
