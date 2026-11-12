@@ -32,7 +32,7 @@ works.forEach(function(w,i){
 
 // Cursor-Label: "scroll me" auf der Startseite, "tap me" über Links und Arbeiten
 var cur=document.getElementById("cursor"), hero=document.getElementById("start");
-var inHero=true, x=0, y=0, cx=0, cy=0, last=null;
+var inHero=true, x=0, y=0, cx=0, cy=0, px=0, py=0, last=null;
 function update(){
   if(!last){cur.classList.remove("on");return}
   var inBar=last.closest&&last.closest(".bar:not(.side)");
@@ -45,9 +45,23 @@ function update(){
   cur.classList.toggle("blue",!empty);   // auf freier Fläche Textfarbe (invertiert: orange), über Inhalten blau
   cur.classList.add("on");
 }
-window.addEventListener("pointermove",function(e){x=e.clientX+14;y=e.clientY+14;last=e.target;update()});
+// Position: Maus = rechts unten vom Zeiger, Finger = über dem Finger (damit er das Label nicht verdeckt)
+function setPos(a,b,touch){px=a; py=b; x=touch?a-30:a+14; y=touch?b-52:b+14}
+window.addEventListener("pointermove",function(e){setPos(e.clientX,e.clientY,e.pointerType==="touch"); last=e.target; update()});
 document.addEventListener("pointerleave",function(){last=null;update()});
-window.addEventListener("scroll",function(){if(last){last=document.elementFromPoint(x-14,y-14)||last;update()}},{passive:true});
+window.addEventListener("scroll",function(){if(last){last=document.elementFromPoint(px,py)||last;update()}},{passive:true});
+// Handy: das Label folgt dem Finger, auch während des Scrollens (dann kommen nur noch Touch-Ereignisse an)
+function touchPos(e){
+  var t=e.touches[0]; if(!t) return;
+  setPos(t.clientX,t.clientY,true);
+  if(e.type==="touchstart"&&!cur.classList.contains("on")){cx=x; cy=y}
+  last=document.elementFromPoint(t.clientX,t.clientY)||e.target; update();
+}
+window.addEventListener("touchstart",touchPos,{passive:true});
+window.addEventListener("touchmove",touchPos,{passive:true});
+function touchEnd(){last=null; update()}
+window.addEventListener("touchend",touchEnd,{passive:true});
+window.addEventListener("touchcancel",touchEnd,{passive:true});
 new IntersectionObserver(function(en){inHero=en[0].intersectionRatio>0.5;update()},{threshold:[0,.5,1]}).observe(hero);
 var reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
 (function loop(){
@@ -386,3 +400,8 @@ dImg.addEventListener("touchend",function(e){
   dotEnd();
 },{passive:true});
 dImg.addEventListener("touchcancel",dotEnd,{passive:true});
+
+// Startseite: nur der Name. Header, Footer, Kategorien und Spaltenlinien erscheinen, sobald man anfängt zu scrollen.
+function updateIntro(){document.body.classList.toggle("intro",window.scrollY<=8)}
+window.addEventListener("scroll",updateIntro,{passive:true});
+updateIntro();
