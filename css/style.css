@@ -692,3 +692,6 @@ body.blue .ballhole{border-color:#ff6a13!important}
     color:#0a2cff!important; border:1.5px solid #0a2cff!important; opacity:.85; mix-blend-mode:normal}
   body.blue .detail.about>.d-head button,body.blue .detail.about>.d-head button:hover{color:#ff6a13!important; border-color:#ff6a13!important}
 }
+
+/* Laptop: keine Pfeile ‹ › in der Kopfzeile (dort blättert der Pfeil am Bildrand); nur das × bleibt */
+@media (min-width:761px){.d-nav,.d-head .d-nav{display:none!important}}
